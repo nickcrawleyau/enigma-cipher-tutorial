@@ -1,0 +1,13 @@
+# Editor / Claude Code config
+.claude/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node
+node_modules/
+
+# Packaged zips
+*.zip

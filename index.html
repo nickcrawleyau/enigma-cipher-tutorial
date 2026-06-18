@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enigma — an interactive cipher tutorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fafaf7;
+    --ink:#1f1f1f;
+    --ink-strong:#111111;
+    --muted:rgba(31,31,31,.66);
+    --faint:rgba(31,31,31,.36);
+    --hair:rgba(31,31,31,.12);
+    --hair-2:rgba(31,31,31,.18);
+    --panel:#f0eee5;
+    --panel-2:#f4f3ee;
+    --navy:#1e3a5f;
+    --amber:#b67c3a;
+    --amber-soft:rgba(182,124,58,.32);
+    --amber-tint:rgba(182,124,58,.10);
+    --serif:"Fraunces","Source Serif 4",Georgia,serif;
+    --sans:"Inter",system-ui,-apple-system,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background-color:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:18px;line-height:1.7;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+  ::selection{background:var(--amber-soft)}
+
+  /* ---------- nav ---------- */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;
+    padding:22px 34px;mix-blend-mode:multiply;pointer-events:none}
+  .nav .brand{font-family:var(--serif);font-size:23px;font-weight:500;color:var(--ink-strong);letter-spacing:-.01em;pointer-events:auto}
+  .nav .links{display:flex;gap:26px;pointer-events:auto}
+  .nav .links a{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+  .nav .links a:hover{color:var(--ink)}
+
+  /* ---------- progress rail ---------- */
+  .rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:11px}
+  .rail button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:var(--faint);cursor:pointer;transition:.25s;opacity:.5}
+  .rail button.on{background:var(--navy);opacity:1;transform:scale(1.35)}
+  @media(max-width:900px){.rail{display:none}}
+
+  /* ---------- layout ---------- */
+  section{padding:13vh 34px;position:relative}
+  .wrap{max-width:1140px;margin:0 auto}
+  .prose{max-width:600px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 26px}
+  .eyebrow b{color:var(--muted);font-weight:400}
+  h1.display{font-family:var(--serif);font-weight:500;color:var(--ink-strong);
+    font-size:clamp(72px,13vw,150px);line-height:.92;letter-spacing:-.03em;margin:0}
+  h2{font-family:var(--serif);font-weight:500;color:var(--ink-strong);
+    font-size:clamp(34px,5.2vw,56px);line-height:1.05;letter-spacing:-.02em;margin:0 0 22px}
+  .lead{font-family:var(--serif);font-size:clamp(22px,2.4vw,30px);line-height:1.32;letter-spacing:-.01em;font-style:italic;margin:0 0 30px;color:var(--ink)}
+  .lead.up{font-style:normal}
+  p{margin:0 0 22px;color:var(--muted);max-width:600px}
+  p .k{color:var(--ink);font-style:italic}
+  em{color:var(--ink);font-style:italic}
+  .note{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:none}
+  .big-space{height:42vh}
+
+  /* ---------- hero ---------- */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+  .scroll-cue{position:absolute;left:50%;bottom:38px;transform:translateX(-50%);text-align:center;
+    font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint)}
+  .scroll-cue .bar{display:block;width:1px;height:34px;background:var(--hair-2);margin:10px auto 0;animation:cue 2.4s ease-in-out infinite}
+  @keyframes cue{0%,100%{transform:scaleY(.4);opacity:.4;transform-origin:top}50%{transform:scaleY(1);opacity:1;transform-origin:top}}
+
+  /* ---------- generic demo card ---------- */
+  .demo{margin-top:30px}
+  .label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:9px}
+  .panel{background:var(--panel);border:.8px solid var(--hair);border-radius:2px;
+    background-image:repeating-linear-gradient(45deg,rgba(31,31,31,.018) 0 2px,transparent 2px 7px)}
+  .io-mono{font-family:var(--mono);font-size:clamp(18px,2vw,26px);letter-spacing:.12em;color:var(--ink);
+    background:var(--panel-2);border:.8px solid var(--hair);border-bottom:1.5px solid var(--navy);border-radius:2px;
+    padding:14px 18px;width:100%;text-transform:uppercase;outline:none}
+  .io-mono::placeholder{color:var(--faint)}
+  .io-out{font-family:var(--mono);font-size:clamp(18px,2vw,26px);letter-spacing:.12em;color:var(--amber);
+    background:var(--amber-tint);border:.8px solid var(--amber-soft);border-radius:2px;padding:14px 18px;min-height:56px;text-transform:uppercase}
+  .arrow-row{font-family:var(--mono);font-size:13px;color:var(--faint);text-align:center;margin:10px 0}
+
+  .btn{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;
+    background:transparent;color:var(--ink);border:.8px solid var(--hair-2);border-radius:2px;padding:9px 14px;transition:.15s}
+  .btn:hover{border-color:var(--navy);color:var(--navy)}
+  .btn.solid{background:var(--navy);color:var(--paper);border-color:var(--navy)}
+  .btn.solid:hover{filter:brightness(1.12);color:var(--paper)}
+  .btn:active{transform:translateY(1px)}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}
+
+  /* ---------- caesar wheel ---------- */
+  .caesar{display:grid;grid-template-columns:minmax(280px,400px) 1fr;gap:50px;align-items:center}
+  @media(max-width:760px){.caesar{grid-template-columns:1fr}}
+  .wheel-wrap{position:relative;width:100%;max-width:380px;aspect-ratio:1;margin:0 auto;touch-action:none;cursor:grab}
+  .wheel-wrap:active{cursor:grabbing}
+  .wheel-wrap svg{width:100%;height:100%;display:block}
+  .wheel-letter{font-family:var(--serif);font-size:15px;fill:var(--faint)}
+  .wheel-letter.inner{fill:var(--ink);font-weight:500}
+  .wheel-letter.hl{fill:var(--amber)}
+  .shift-row{display:flex;align-items:center;gap:14px;margin-top:24px;max-width:380px;margin-left:auto;margin-right:auto}
+  .shift-row .label{margin:0}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:2px;background:var(--hair-2);flex:1;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--navy);cursor:pointer;border:2px solid var(--paper);box-shadow:0 0 0 .8px var(--navy)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--navy);cursor:pointer;border:2px solid var(--paper)}
+  .shift-val{font-family:var(--mono);font-size:18px;color:var(--ink);min-width:30px;text-align:right}
+
+  /* ---------- alphabet strips (substitution / vigenere) ---------- */
+  .strip{display:flex;flex-direction:column;gap:14px}
+  .strip .row{display:grid;grid-template-columns:repeat(26,1fr);gap:3px}
+  .cellbox{aspect-ratio:1;display:grid;place-items:center;font-family:var(--mono);font-size:clamp(9px,1.1vw,14px);
+    background:var(--panel-2);border:.8px solid var(--hair);border-radius:2px;color:var(--ink);user-select:none}
+  .cellbox.plain{background:transparent;border-color:transparent;color:var(--faint)}
+  .cellbox.cipher{cursor:pointer}
+  .cellbox.cipher:hover{border-color:var(--navy)}
+  .cellbox.armed{border-color:var(--amber);background:var(--amber-tint);color:var(--amber)}
+  .cellbox.hit{background:var(--amber-tint);border-color:var(--amber-soft);color:var(--amber)}
+  .striplabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);width:54px;flex:none}
+  .strip .rowL{display:flex;align-items:center;gap:10px}
+  .strip .rowL .row{flex:1}
+
+  /* ---------- frequency chart ---------- */
+  .freq{display:flex;align-items:flex-end;gap:4px;height:200px;border-bottom:.8px solid var(--hair-2);padding-bottom:0}
+  .freq .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:6px}
+  .freq .bar{width:62%;background:var(--ink);border-radius:1px 1px 0 0;transition:height .5s ease}
+  .freq .bar.eng{background:var(--amber);opacity:0;width:30%;position:relative;transition:.5s}
+  .freq .col .glyph{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .freq .barwrap{flex:1;width:100%;display:flex;justify-content:center;align-items:flex-end;gap:2px}
+  .freq.compare .bar.eng{opacity:.9}
+
+  /* ---------- vigenere columns ---------- */
+  .vig{display:flex;gap:5px;flex-wrap:wrap;font-family:var(--mono)}
+  .vig .vcol{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 7px;border:.8px solid var(--hair);border-radius:2px;background:var(--panel-2);min-width:40px}
+  .vig .vcol .p{font-size:18px;color:var(--ink)}
+  .vig .vcol .key{font-size:18px;color:var(--navy)}
+  .vig .vcol .sh{font-size:11px;color:var(--faint)}
+  .vig .vcol .c{font-size:18px;color:var(--amber)}
+  .vig .vcol .ar{font-size:10px;color:var(--faint)}
+
+  /* ---------- rotor diagram ---------- */
+  .rotors{display:flex;gap:clamp(8px,4vw,52px);justify-content:center;flex-wrap:wrap}
+  .rotor{position:relative}
+  .rotor .rname{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);text-align:center;margin-bottom:12px}
+  .ladder{display:grid;grid-template-columns:26px 70px 26px;gap:0 0;align-items:stretch;position:relative}
+  .ladder .side{display:flex;flex-direction:column;gap:2px}
+  .ladder .side .pin{height:18px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .ladder .side .pin.lit{color:var(--amber);font-weight:600}
+  .ladder svg{position:absolute;inset:0 26px;width:calc(100% - 52px);height:100%;left:26px;pointer-events:none}
+  .wirepath{stroke:var(--hair-2);stroke-width:1;fill:none}
+  .wirepath.lit{stroke:var(--amber);stroke-width:2}
+
+  .tape{font-family:var(--mono);font-size:20px;letter-spacing:.22em;color:var(--ink);background:var(--panel-2);
+    border:.8px solid var(--hair);border-radius:2px;padding:14px 18px;min-height:54px;text-transform:uppercase;white-space:pre-wrap;word-break:break-all}
+  .tape .new{color:var(--amber)}
+
+  /* ---------- signal path (reflector) ---------- */
+  .signal{overflow-x:auto;padding-bottom:10px}
+  .signal-inner{display:grid;grid-template-columns:auto repeat(4,1fr) auto;gap:0;min-width:760px;position:relative}
+  .scol{position:relative;padding:0 4px}
+  .scol .hd{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:center;height:30px}
+  .scol .pin{height:20px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:default}
+  .scol.io .pin{cursor:pointer}
+  .scol.io .pin:hover{color:var(--navy)}
+  .scol .pin.lit{color:var(--amber);font-weight:600}
+  .scol .pin.io-lit{color:var(--navy);font-weight:600}
+  .signal svg.tracer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+  /* ---------- plugboard ---------- */
+  .plug-wrap{position:relative}
+  .plug-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+  .plug-grid{display:grid;grid-template-columns:repeat(13,1fr);gap:clamp(6px,1.4vw,16px);position:relative;z-index:2;padding:18px clamp(8px,2vw,26px)}
+  .jack{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .jack .jl{font-family:var(--mono);font-size:14px;color:var(--ink)}
+  .jack .hole{width:clamp(20px,2.6vw,30px);height:clamp(20px,2.6vw,30px);border-radius:50%;border:1px solid var(--hair-2);
+    background:var(--panel-2);display:grid;place-items:center;transition:.12s}
+  .jack .hole::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--faint)}
+  .jack:hover .hole{border-color:var(--navy)}
+  .jack.armed .hole{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-soft)}
+  .jack.wired .hole{border-color:var(--cab,#1e3a5f)}
+  .jack.wired .hole::after{background:var(--cab,#1e3a5f);box-shadow:0 0 5px var(--cab,#1e3a5f)}
+  .jack.wired .jl{color:var(--ink-strong);font-weight:500}
+
+  /* ---------- machine ---------- */
+  .machine{background:var(--panel);border:.8px solid var(--hair);border-radius:3px;padding:clamp(18px,4vw,40px);
+    background-image:repeating-linear-gradient(45deg,rgba(31,31,31,.02) 0 2px,transparent 2px 8px)}
+  .m-rotors{display:flex;gap:14px;justify-content:center;margin-bottom:30px}
+  .m-rotor{text-align:center}
+  .m-rotor select{font-family:var(--mono);font-size:13px;text-align:center;background:var(--panel-2);color:var(--ink);
+    border:.8px solid var(--hair-2);border-radius:2px;padding:5px 4px;width:64px;cursor:pointer;margin-bottom:10px}
+  .thumb{background:var(--paper);border:.8px solid var(--hair-2);border-radius:2px;width:64px;margin:0 auto;overflow:hidden}
+  .thumb .arw{width:100%;border:0;background:transparent;color:var(--faint);font-size:10px;padding:3px 0;cursor:pointer}
+  .thumb .arw:hover{color:var(--navy);background:var(--panel-2)}
+  .thumb .win{font-family:var(--serif);font-size:30px;font-weight:500;color:var(--ink-strong);padding:2px 0;line-height:1}
+  .thumb .st{font-family:var(--mono);font-size:9px;color:var(--faint);padding-bottom:4px}
+  .m-board{display:flex;flex-direction:column;gap:9px;align-items:center}
+  .m-board .brow{display:flex;gap:9px}
+  .lamp{width:clamp(30px,4vw,42px);height:clamp(30px,4vw,42px);border-radius:50%;display:grid;place-items:center;
+    font-family:var(--mono);font-size:15px;color:var(--faint);background:var(--panel-2);border:1px solid var(--hair-2);transition:.06s}
+  .lamp.on{color:#3a2600;background:radial-gradient(circle at 50% 38%,#ffe9a8,var(--amber) 75%);
+    border-color:var(--amber);box-shadow:0 0 16px var(--amber-soft),0 0 5px rgba(182,124,58,.6)}
+  .mkey{width:clamp(30px,4vw,42px);height:clamp(30px,4vw,42px);border-radius:50%;display:grid;place-items:center;
+    font-family:var(--mono);font-size:15px;color:var(--paper);background:#1c1a17;border:1px solid #000;cursor:pointer;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.12),0 2px 3px rgba(0,0,0,.3);transition:.06s;user-select:none}
+  .mkey:hover{background:#2a2620}
+  .mkey.down{transform:translateY(1px);background:#3a352c}
+  .m-space{margin-top:4px}
+  .m-space button{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--paper);background:#1c1a17;border:1px solid #000;
+    border-radius:2px;padding:7px 60px;cursor:pointer}
+  .m-io{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  @media(max-width:640px){.m-io{grid-template-columns:1fr}}
+  .m-io .label{margin-bottom:6px}
+  .m-field{font-family:var(--mono);font-size:16px;letter-spacing:.14em;background:var(--paper);border:.8px solid var(--hair);
+    border-radius:2px;padding:12px 14px;min-height:80px;text-transform:uppercase;white-space:pre-wrap;word-break:break-all;color:var(--ink)}
+  .m-field.out{color:var(--amber);background:var(--amber-tint);border-color:var(--amber-soft)}
+  .m-field:empty::before{content:attr(data-ph);color:var(--faint);letter-spacing:0;text-transform:none}
+  .advanced{display:none;margin-top:18px;gap:14px;justify-content:center}
+  .advanced.show{display:flex}
+  .ring{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .ring button{width:22px;height:22px;border:.8px solid var(--hair-2);background:var(--panel-2);border-radius:2px;cursor:pointer;color:var(--ink)}
+  .ring button:hover{border-color:var(--navy);color:var(--navy)}
+
+  /* ---------- key-count ---------- */
+  .keycount{display:flex;flex-direction:column;gap:6px;align-items:flex-start;margin-top:10px}
+  .keycount .ln{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .keycount .num{font-family:var(--serif);font-size:clamp(30px,5vw,58px);font-weight:500;color:var(--ink-strong);letter-spacing:-.02em;line-height:1.1}
+  .keycount .op{font-family:var(--serif);font-size:28px;color:var(--faint)}
+  .keycount .cap{font-family:var(--sans);font-size:14px;color:var(--muted);max-width:340px}
+  .keycount .total{border-top:.8px solid var(--hair-2);margin-top:18px;padding-top:18px;width:100%}
+  .keycount .total .num{font-size:clamp(26px,4vw,44px);color:var(--navy);word-break:break-all}
+  .keycount .total .label{margin-bottom:8px}
+
+  /* ---------- crib slider ---------- */
+  .crib{font-family:var(--mono);font-size:clamp(13px,1.5vw,17px)}
+  .crib .track{display:flex;gap:3px;flex-wrap:nowrap;overflow-x:auto;padding:6px 0}
+  .crib .ct{display:flex;flex-direction:column;align-items:center;min-width:22px}
+  .crib .ct .ch{width:22px;height:26px;display:grid;place-items:center;color:var(--ink);border-radius:2px}
+  .crib .ct .cr{width:22px;height:26px;display:grid;place-items:center;color:var(--navy);border-radius:2px}
+  .crib .ct.clash .ch{background:var(--amber-soft);color:var(--amber)}
+  .crib .ct.clash .cr{background:var(--amber-soft);color:var(--amber)}
+  .crib .ctrls{display:flex;align-items:center;gap:16px;margin:18px 0}
+  .crib .ctrls .verdict{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .crib .ctrls .verdict b.bad{color:var(--amber)}
+  .crib .ctrls .verdict b.ok{color:var(--navy)}
+
+  .credit{text-align:center;font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);padding:8vh 0 2vh}
+  .credit a{color:var(--muted)}
+  .src-note{max-width:600px;margin:0 auto;text-align:center;font-size:13px;color:var(--faint);padding-bottom:8vh}
+  .src-note a{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="brand">Enigma</div>
+  <div class="links"><a href="#sec-machine">The Machine</a><a href="#sec-break">The Break</a></div>
+</div>
+<div class="rail" id="rail"></div>
+
+<!-- ============ 1 · COLD OPEN ============ -->
+<section class="hero" id="sec-1" data-rail="I">
+  <div class="wrap">
+    <p class="eyebrow">I&nbsp;&nbsp;·&nbsp;&nbsp;Cold open</p>
+    <h1 class="display">Enigma</h1>
+    <p class="lead" style="margin-top:24px;max-width:480px">It was supposed to be unbreakable.</p>
+    <p style="max-width:430px">This is the story of why it wasn't — told one cipher at a time, each one a working machine you can turn with your own hands.</p>
+  </div>
+  <div class="scroll-cue">Scroll<span class="bar"></span></div>
+</section>
+
+<!-- ============ 2 · WHY ENCRYPTION ============ -->
+<section id="sec-2" data-rail="02">
+  <div class="wrap"><div class="prose">
+    <p class="eyebrow"><b>02</b>&nbsp;&nbsp;·&nbsp;&nbsp;Why encryption</p>
+    <h2>Some words are not meant to be read.</h2>
+    <p class="lead">Not by everyone, anyway.</p>
+    <p>People have hidden their writing for as long as they have written. A merchant guarding a price. A general guarding a plan. A lover guarding a name.</p>
+    <div class="io-out" id="live-cipher" style="margin:8px 0 24px;letter-spacing:.18em">VDKI CS NB HYU GAZJPL</div>
+    <p>The goal never changes: make the words unreadable to everyone but the one person who should read them. That trick is a <span class="k">cipher</span>, and the oldest one still has Caesar's name on it.</p>
+  </div></div>
+</section>
+
+<!-- ============ 3 · CAESAR ============ -->
+<section id="sec-3" data-rail="03">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>03</b>&nbsp;&nbsp;·&nbsp;&nbsp;Caesar</p>
+      <h2>The oldest trick in the book.</h2>
+      <p>Shift every letter forward by the same amount. That is the entire cipher. Picture the alphabet written twice on two paper rings, one inside the other; spin the inner ring a few steps and read off the new letter underneath each old one.</p>
+    </div>
+    <div class="demo caesar">
+      <div>
+        <div class="wheel-wrap" id="wheel" tabindex="0" aria-label="Caesar wheel, drag to change shift"></div>
+        <div class="shift-row"><span class="label">Shift</span><input type="range" id="shift" min="0" max="25" value="3"><span class="shift-val" id="shiftVal">03</span></div>
+        <p class="note" style="text-align:center;margin-top:10px">drag the wheel, or slide</p>
+      </div>
+      <div>
+        <div class="label">Plaintext</div>
+        <input class="io-mono" id="caesarIn" value="MUM" maxlength="22" spellcheck="false">
+        <div class="arrow-row">↓</div>
+        <div class="label">Ciphertext</div>
+        <div class="io-out" id="caesarOut">KHOOR</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · SUBSTITUTION ============ -->
+<section id="sec-4" data-rail="04">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>04</b>&nbsp;&nbsp;·&nbsp;&nbsp;Substitution</p>
+      <h2>A bigger lock.</h2>
+      <p>Now drop the rule that it has to be a shift. Let any letter map to any other letter — a full reshuffle. The whole mapping <em>is</em> the key. There are 403,291,461,126,605,635,584,000,000 of them, and yet this cipher was broken for a thousand years.</p>
+    </div>
+    <div class="demo">
+      <div class="btn-row" style="margin-bottom:18px"><button class="btn solid" id="subScramble">Scramble</button><button class="btn" id="subReset">Reset</button><span class="note">or click two cipher letters to swap them</span></div>
+      <div class="strip" id="subStrip"></div>
+      <div style="margin-top:26px">
+        <div class="label">Plaintext</div>
+        <input class="io-mono" id="subIn" value="A SECRET MESSAGE" maxlength="26" spellcheck="false">
+        <div class="arrow-row">↓</div>
+        <div class="label">Ciphertext</div>
+        <div class="io-out" id="subOut"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · THE BREAK ============ -->
+<section id="sec-5" data-rail="05">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>05</b>&nbsp;&nbsp;·&nbsp;&nbsp;The break</p>
+      <h2>But frequencies don't lie.</h2>
+      <p>A substitution scrambles <em>which</em> letter is which — but not <em>how often</em> each appears. In English, E is far and away the most common letter, then T, then A. Those peaks survive the scramble; they just wear a different mask. Count the ciphertext and your suspects line themselves up.</p>
+    </div>
+    <div class="demo">
+      <div class="label">Intercepted ciphertext</div>
+      <div class="tape" id="interText" style="font-size:14px;letter-spacing:.08em;line-height:1.9">OZ VQL ZIT WTLZ GY ZODTL, OZ VQL ZIT VGKLZ GY ZODTL, OZ VQL ZIT QUT GY VOLRGD, OZ VQL ZIT QUT GY YGGSOLIFTLL.</div>
+      <div class="label" style="margin-top:26px">Letter frequency in the ciphertext</div>
+      <div class="freq" id="freq"></div>
+      <div class="btn-row"><button class="btn" id="freqCompare">Compare to English</button><span class="note" id="freqHint">the tallest ciphertext bars are your E, T, A, O…</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6 · VIGENERE ============ -->
+<section id="sec-6" data-rail="06">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>06</b>&nbsp;&nbsp;·&nbsp;&nbsp;Vigenère</p>
+      <h2>A cipher that changes its mind.</h2>
+      <p>What if the shift changed with every keystroke? Write a key word under the message, repeating it, and let each key letter set the shift for the letter above it (A = 0, B = 1, … Z = 25). Now a repeated plaintext letter usually encrypts to something different each time, and the shape of English dissolves.</p>
+    </div>
+    <div class="demo">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px">
+        <div><div class="label">Plaintext</div><input class="io-mono" id="vigIn" value="TOBEORNOTTOBE" maxlength="20" spellcheck="false" style="font-size:18px"></div>
+        <div><div class="label">Key</div><input class="io-mono" id="vigKey" value="LEMON" maxlength="12" spellcheck="false" style="font-size:18px;border-bottom-color:var(--amber)"></div>
+      </div>
+      <div class="vig" id="vig"></div>
+      <p class="note" id="vigLook" style="margin-top:18px"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7 · ONE ROTOR ============ -->
+<section id="sec-7" data-rail="07">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>07</b>&nbsp;&nbsp;·&nbsp;&nbsp;One rotor</p>
+      <h2>A cipher you don't have to remember.</h2>
+      <p>A rotor is a wheel: 26 contacts on each face, 26 wires inside scrambling one to the other. The wiring is fixed at the factory — but the wheel <em>turns</em>. Every keypress advances it one notch, so the same key now flows through a different wire and lights a different letter. Press one letter 26 times and you get 26 different outputs.</p>
+    </div>
+    <div class="demo">
+      <div class="rotors"><div class="rotor" id="rotor1"></div></div>
+      <div style="max-width:560px;margin:26px auto 0">
+        <div class="label">Output tape</div>
+        <div class="tape" id="tape1">press a key, or run the demo</div>
+        <div class="btn-row"><button class="btn solid" id="demo1">Press A six times</button><button class="btn" id="reset1">Reset</button></div>
+      </div>
+      <p class="note" style="margin-top:20px;text-align:center">This is the real Rotor I wiring — <span style="color:var(--muted)">EKMFLGDQVZNTOWYHXUSPAIBRCJ</span> — used in 1939.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8 · MANY ROTORS ============ -->
+<section id="sec-8" data-rail="08">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>08</b>&nbsp;&nbsp;·&nbsp;&nbsp;Many rotors</p>
+      <h2>Three wheels, all turning.</h2>
+      <p>Stack three. The signal threads through all of them in turn. The fast rotor steps every keypress; the middle one only when the fast rotor completes a turn (~26 keys); the slow one only when the middle completes a turn (~676). Three odometer wheels at three speeds — the pattern won't repeat for 17,576 letters.</p>
+    </div>
+    <div class="demo">
+      <div class="rotors" id="rotors3"></div>
+      <div style="max-width:560px;margin:26px auto 0">
+        <div class="label">Output tape</div>
+        <div class="tape" id="tape3">press a key, or run the demo</div>
+        <div class="btn-row"><button class="btn solid" id="demo3">Press A thirty times</button><button class="btn" id="reset3">Reset</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9 · REFLECTOR ============ -->
+<section id="sec-9" data-rail="09">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>09</b>&nbsp;&nbsp;·&nbsp;&nbsp;Reflector</p>
+      <h2>The signal bounces back.</h2>
+      <p>Behind the rotors sits a fixed wiring that pairs letters and sends the current back the way it came — through all three rotors again, in reverse. Because the path is mirrored, the machine is a mirror: whatever it does to a letter it undoes if you repeat it. The same machine encrypts and decrypts.</p>
+    </div>
+    <div class="demo">
+      <div class="signal"><div class="signal-inner" id="signal"></div></div>
+      <p class="note" style="margin-top:14px">click any letter on the left — the current enters and leaves on the same side, at a different letter.</p>
+      <div style="max-width:560px;margin-top:30px">
+        <div class="label">Encrypt → decrypt · rotors AAA · reflector B</div>
+        <input class="io-mono" id="reflIn" value="ATTACKATDAWN" maxlength="26" spellcheck="false">
+        <div class="arrow-row">↓ same machine ↓</div>
+        <div class="io-out" id="reflOut"></div>
+        <div class="arrow-row">↓ type that back in ↓</div>
+        <div class="io-out" id="reflBack" style="color:var(--navy);background:rgba(30,58,95,.08);border-color:rgba(30,58,95,.25)"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 · PLUGBOARD ============ -->
+<section id="sec-10" data-rail="10">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>10</b>&nbsp;&nbsp;·&nbsp;&nbsp;Plugboard</p>
+      <h2>Patch cables for the alphabet.</h2>
+      <p>Before a letter reaches the rotors it is swapped with another; after it returns it is swapped again. Operators ran about ten cables on a panel of 26 jacks. Each cable is just a fixed swap — the very first trick from five sections ago — but stacked on top of the rotors it multiplies the machine's settings enormously.</p>
+    </div>
+    <div class="demo">
+      <div class="btn-row" style="margin-bottom:6px"><span class="label" id="plugCount" style="margin:0">0 of 10 cables</span><button class="btn" id="plugClear">Clear</button></div>
+      <div class="panel plug-wrap"><svg class="plug-svg" id="plugSvg"></svg><div class="plug-grid" id="plugGrid"></div></div>
+      <p class="note" style="margin-top:12px">click two letters to connect them · click a wired letter to unplug it</p>
+      <div style="margin-top:24px">
+        <div class="label">Same rotors, same key — type to compare</div>
+        <input class="io-mono" id="plugIn" value="DAD" maxlength="26" spellcheck="false">
+        <div style="margin-top:14px"><div class="label">With your plugs</div><div class="io-out" id="plugOutWith"></div></div>
+        <div style="margin-top:12px"><div class="label">With no plugs</div><div class="io-out" id="plugOutNone" style="color:var(--navy);background:rgba(30,58,95,.08);border-color:rgba(30,58,95,.25)"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 · HOW MANY KEYS ============ -->
+<section id="sec-11" data-rail="11">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>11</b>&nbsp;&nbsp;·&nbsp;&nbsp;How many keys</p>
+      <h2>How many ways to set it up?</h2>
+      <p>Three rotors chosen and ordered; 26 starting positions each; ten cables drawn between the letters. Multiply it out and the daily key lived in a space this large:</p>
+    </div>
+    <div class="demo keycount" id="keycount">
+      <div class="ln"><span class="num" data-target="60">0</span><span class="cap">ways to pick &amp; order three rotors from five</span></div>
+      <div class="ln"><span class="op">×</span><span class="num" data-target="17576">0</span><span class="cap">starting positions for those three rotors</span></div>
+      <div class="ln"><span class="op">×</span><span class="num" data-target="150738274937250">0</span><span class="cap">ways to lay ten patch cables across 26 letters</span></div>
+      <div class="total"><div class="label">Total possible Enigma settings</div><div class="num" id="grandTotal">0</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 · THE MACHINE ============ -->
+<section id="sec-machine" data-rail="12">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>12</b>&nbsp;&nbsp;·&nbsp;&nbsp;The machine</p>
+      <h2>The Enigma.</h2>
+      <p>Every piece, assembled. Choose your rotors, set their starting positions, patch the plugboard, and type. Set the same start a second time, type the output, and the message comes back — accurate wirings, accurate stepping, double-step quirk and all.</p>
+    </div>
+    <div class="demo machine">
+      <div class="label" style="text-align:center;margin-bottom:14px">Rotors (left → right)</div>
+      <div class="m-rotors" id="mRotors"></div>
+      <div class="m-board">
+        <div class="brow" id="lampRow1"></div><div class="brow" id="lampRow2"></div><div class="brow" id="lampRow3"></div>
+      </div>
+      <div class="m-board" style="margin-top:18px">
+        <div class="brow" id="keyRow1"></div><div class="brow" id="keyRow2"></div><div class="brow" id="keyRow3"></div>
+        <div class="m-space"><button id="mSpace">SPACE</button></div>
+      </div>
+      <div class="advanced" id="advanced"></div>
+      <div style="margin-top:26px">
+        <div class="label" style="text-align:center;margin-bottom:12px"><span id="mPlugCount">0 of 10 cables</span> — plugboard</div>
+        <div class="panel plug-wrap"><svg class="plug-svg" id="mPlugSvg"></svg><div class="plug-grid" id="mPlugGrid"></div></div>
+      </div>
+      <div class="m-io">
+        <div><div class="label">Typed</div><div class="m-field" id="mTyped" data-ph="type, or click the keys…"></div></div>
+        <div><div class="label">Output</div><div class="m-field out" id="mOut" data-ph="lamps lit, grouped in fives"></div></div>
+      </div>
+      <div class="btn-row" style="justify-content:space-between"><div style="display:flex;gap:10px"><button class="btn solid" id="mReset">Reset rotors</button><button class="btn" id="mAdvToggle">Show advanced (ring settings)</button></div><button class="btn" id="mChallenge">Load intercept challenge →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 · AND YET ============ -->
+<section id="sec-break" data-rail="13">
+  <div class="wrap">
+    <div class="prose">
+      <p class="eyebrow"><b>13</b>&nbsp;&nbsp;·&nbsp;&nbsp;And yet</p>
+      <h2>It fell.</h2>
+      <p>A hundred and fifty-eight quintillion settings, changed every midnight — and by mid-war Bletchley Park was reading German traffic in hours. Not by brute force. By shrinking the search.</p>
+      <p>The first wedge was the reflector itself. Because the current always bounces back, <em>no letter can ever encrypt to itself.</em> A is never A. T is never T. Not for any rotor setting, any plugboard, ever — a rule the machine cannot break.</p>
+      <p class="eyebrow" style="margin-top:40px"><b>01</b>&nbsp;&nbsp;·&nbsp;&nbsp;The crib</p>
+      <p>A <em>crib</em> is plaintext you can guess. German weather stations opened the 6 a.m. report with <span class="k">WETTERBERICHT</span>. Bletchley didn't know where it sat in the ciphertext — but any alignment where a crib letter lands on the <em>same</em> ciphertext letter is impossible. Slide it and watch positions get ruled out for free:</p>
+    </div>
+    <div class="demo crib" id="crib">
+      <div class="label" id="cribLabel">Intercepted ciphertext</div>
+      <div class="track" id="cribCipher"></div>
+      <div class="track" id="cribGuess"></div>
+      <div class="ctrls"><button class="btn" id="cribPrev">← Position</button><span class="verdict" id="cribVerdict"></span><button class="btn" id="cribNext">Position →</button></div>
+    </div>
+    <div class="wrap"><div class="prose">
+      <p class="eyebrow" style="margin-top:30px"><b>02</b>&nbsp;&nbsp;·&nbsp;&nbsp;The bombe</p>
+      <p>For each surviving alignment, Turing's <em>bombe</em> — stacks of Enigma rotors spinning in parallel, each a guess — searched for a rotor setting consistent with the crib, and stopped when it found one. The cipher was strong; the system around it, with its predictable operators, was not.</p>
+      <p class="eyebrow" style="margin-top:30px"><b>03</b>&nbsp;&nbsp;·&nbsp;&nbsp;Afterwards</p>
+      <p>The intelligence, codenamed Ultra, is reckoned to have shortened the war by a year or more, and stayed secret for thirty. The machine above is mechanically real. The history is too. The arithmetic was bigger than the people who broke it. They broke it anyway — with patience, machinery, and one tiny rule.</p>
+    </div></div>
+  </div>
+</section>
+
+<div class="credit">A faithful rebuild of <a href="https://enigma.rory.codes/" target="_blank" rel="noopener">enigma.rory.codes</a></div>
+<p class="src-note">Original tutorial, prose and visual design by <strong>Rory Flint</strong>. This is an independent re-implementation of the interactive machine and its layout, built to learn from it; the explanatory text here is rewritten, not copied.</p>
+
+<script>
+"use strict";
+const ALPHA="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const A=c=>ALPHA.indexOf(c), L=i=>ALPHA[((i%26)+26)%26];
+const mod=(n,m)=>((n%m)+m)%m;
+
+/* ---------- Enigma engine (verified: I-II-III/B/AAA  AAAAA->BDZGO) ---------- */
+const ROTORS={
+  I:{w:"EKMFLGDQVZNTOWYHXUSPAIBRCJ",n:"Q"},
+  II:{w:"AJDKSIRUXBLHWTMCQGZNPYFVOE",n:"E"},
+  III:{w:"BDFHJLCPRTXVZNYEIWGAKMUSQO",n:"V"},
+  IV:{w:"ESOVPZJAYQUIRHXLNFTGKDCMWB",n:"J"},
+  V:{w:"VZBRGITYUPSDNHLXAWMJQOFECK",n:"Z"}
+};
+const REFLECTORS={B:"YRUHQSLDPXNGOKMIEBFZCWVJAT",C:"FVPJIAOYEDRZXWGCTKUQSBNMHL"};
+function rotor(type,pos=0,ring=0){const w=[...ROTORS[type].w].map(A);const inv=[];w.forEach((v,i)=>inv[v]=i);return{type,pos,ring,w,inv};}
+const fwd=(r,c)=>{const s=mod(r.pos-r.ring,26);return mod(r.w[mod(c+s,26)]-s,26);};
+const bwd=(r,c)=>{const s=mod(r.pos-r.ring,26);return mod(r.inv[mod(c+s,26)]-s,26);};
+function stepRotors(rs){// rs = [left, mid, right]
+  const[Lr,Mr,Rr]=rs;
+  const rN=ROTORS[Rr.type].n.includes(L(Rr.pos));
+  const mN=ROTORS[Mr.type].n.includes(L(Mr.pos));
+  if(mN){Mr.pos=mod(Mr.pos+1,26);Lr.pos=mod(Lr.pos+1,26);}
+  else if(rN){Mr.pos=mod(Mr.pos+1,26);}
+  Rr.pos=mod(Rr.pos+1,26);
+}
+// encode one letter through plug -> R,M,L -> reflector -> L,M,R -> plug. plug = {A:'B',...}
+function thru(rs,refl,plug,ch,doStep=true){
+  if(doStep)stepRotors(rs);
+  let c=A(ch);
+  const pg=x=>plug[L(x)]?A(plug[L(x)]):x;
+  c=pg(c);
+  c=fwd(rs[2],c);c=fwd(rs[1],c);c=fwd(rs[0],c);
+  c=A(REFLECTORS[refl][c]);
+  c=bwd(rs[0],c);c=bwd(rs[1],c);c=bwd(rs[2],c);
+  c=pg(c);
+  return L(c);
+}
+function encodeText(types,starts,rings,refl,plug,text){
+  const rs=types.map((t,i)=>rotor(t,starts[i],rings?rings[i]:0));
+  let out="";
+  for(const ch of text.toUpperCase()){if(ch>="A"&&ch<="Z")out+=thru(rs,refl,plug,ch);}
+  return{out,positions:rs.map(r=>r.pos)};
+}
+const group5=s=>s.replace(/(.{5})/g,"$1 ").trim();
+
+/* ================= 2 · live cipher ================= */
+(function(){
+  const el=document.getElementById("live-cipher");const phrase="SOME WORDS ARE SECRET";
+  function rnd(){let map={},used=[...ALPHA];
+    return phrase.split("").map(c=>{if(c===" ")return" ";if(!map[c]){map[c]=used.splice(Math.floor(Math.random()*used.length),1)[0];}return map[c];}).join("");}
+  let t=0;setInterval(()=>{el.textContent=rnd();},1400);
+})();
+
+/* ================= 3 · Caesar wheel ================= */
+(function(){
+  const wrap=document.getElementById("wheel"),slider=document.getElementById("shift"),val=document.getElementById("shiftVal");
+  const inEl=document.getElementById("caesarIn"),outEl=document.getElementById("caesarOut");
+  let shift=3;
+  const NS="http://www.w3.org/2000/svg";
+  function build(){
+    const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 200 200");
+    const cx=100,cy=100,rOut=90,rIn=66;
+    [["outer",rOut,false],["inner",rIn,true]].forEach(([cls,r,inner])=>{
+      const circle=document.createElementNS(NS,"circle");circle.setAttribute("cx",cx);circle.setAttribute("cy",cy);
+      circle.setAttribute("r",r+10);circle.setAttribute("fill","none");circle.setAttribute("stroke","rgba(31,31,31,.14)");circle.setAttribute("stroke-width",".6");
+      svg.appendChild(circle);
+      const g=document.createElementNS(NS,"g");g.setAttribute("class",cls+"-ring");if(inner)g.id="innerRing";
+      for(let i=0;i<26;i++){
+        const ang=(i/26)*2*Math.PI-Math.PI/2;
+        const x=cx+Math.cos(ang)*r,y=cy+Math.sin(ang)*r;
+        const t=document.createElementNS(NS,"text");t.setAttribute("x",x);t.setAttribute("y",y);
+        t.setAttribute("text-anchor","middle");t.setAttribute("dominant-baseline","central");
+        t.setAttribute("class","wheel-letter"+(inner?" inner":""));t.setAttribute("transform",`rotate(${i*360/26} ${x} ${y})`);
+        t.textContent=ALPHA[i];g.appendChild(t);
+      }
+      svg.appendChild(g);
+    });
+    wrap.innerHTML="";wrap.appendChild(svg);
+  }
+  function render(){
+    val.textContent=String(shift).padStart(2,"0");slider.value=shift;
+    const ring=document.getElementById("innerRing");if(ring)ring.setAttribute("transform",`rotate(${shift*360/26} 100 100)`);
+    const txt=inEl.value.toUpperCase();
+    outEl.textContent=txt.replace(/[A-Z]/g,c=>L(A(c)+shift))||" ";
+  }
+  build();render();
+  slider.addEventListener("input",()=>{shift=+slider.value;render();});
+  inEl.addEventListener("input",render);
+  // drag the wheel
+  let dragging=false,lastAng=0;
+  function angleOf(e){const r=wrap.getBoundingClientRect();const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left-r.width/2;const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top-r.height/2;return Math.atan2(y,x);}
+  wrap.addEventListener("pointerdown",e=>{dragging=true;lastAng=angleOf(e);wrap.setPointerCapture(e.pointerId);});
+  wrap.addEventListener("pointermove",e=>{if(!dragging)return;const a=angleOf(e);let d=a-lastAng;if(d>Math.PI)d-=2*Math.PI;if(d<-Math.PI)d+=2*Math.PI;const steps=d/(2*Math.PI/26);if(Math.abs(steps)>=1){shift=mod(shift+Math.round(steps),26);lastAng=a;render();}});
+  wrap.addEventListener("pointerup",()=>dragging=false);
+  wrap.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowUp"){shift=mod(shift+1,26);render();e.preventDefault();}if(e.key==="ArrowLeft"||e.key==="ArrowDown"){shift=mod(shift-1,26);render();e.preventDefault();}});
+})();
+
+/* ================= 4 · Substitution ================= */
+(function(){
+  const DEFAULT="QWERTYUIOPASDFGHJKLZXCVBNM";
+  let cipher=DEFAULT.split("");let armed=null;
+  const strip=document.getElementById("subStrip"),inEl=document.getElementById("subIn"),outEl=document.getElementById("subOut");
+  function build(){
+    strip.innerHTML="";
+    const r1=document.createElement("div");r1.className="rowL";
+    r1.innerHTML='<span class="striplabel">Plain</span>';
+    const g1=document.createElement("div");g1.className="row";
+    ALPHA.split("").forEach(c=>{const d=document.createElement("div");d.className="cellbox plain";d.textContent=c;g1.appendChild(d);});
+    r1.appendChild(g1);
+    const r2=document.createElement("div");r2.className="rowL";
+    r2.innerHTML='<span class="striplabel">Cipher</span>';
+    const g2=document.createElement("div");g2.className="row";g2.id="cipherRow";
+    cipher.forEach((c,i)=>{const d=document.createElement("div");d.className="cellbox cipher";d.textContent=c;d.dataset.i=i;d.onclick=()=>click(i);g2.appendChild(d);});
+    r2.appendChild(g2);
+    strip.appendChild(r1);strip.appendChild(r2);render();
+  }
+  function click(i){
+    if(armed===null){armed=i;}
+    else if(armed===i){armed=null;}
+    else{const t=cipher[armed];cipher[armed]=cipher[i];cipher[i]=t;armed=null;}
+    refreshCipher();
+  }
+  function refreshCipher(){
+    [...document.querySelectorAll("#cipherRow .cellbox")].forEach((d,i)=>{d.textContent=cipher[i];d.classList.toggle("armed",armed===i);});
+    render();
+  }
+  function render(){
+    const map={};ALPHA.split("").forEach((c,i)=>map[c]=cipher[i]);
+    outEl.textContent=inEl.value.toUpperCase().replace(/[A-Z]/g,c=>map[c])||" ";
+  }
+  document.getElementById("subScramble").onclick=()=>{for(let i=cipher.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cipher[i],cipher[j]]=[cipher[j],cipher[i]];}armed=null;refreshCipher();};
+  document.getElementById("subReset").onclick=()=>{cipher=DEFAULT.split("");armed=null;refreshCipher();};
+  inEl.addEventListener("input",render);
+  build();
+})();
+
+/* ================= 5 · Frequency ================= */
+(function(){
+  const ENG={A:8.2,B:1.5,C:2.8,D:4.3,E:12.7,F:2.2,G:2.0,H:6.1,I:7.0,J:0.15,K:0.77,L:4.0,M:2.4,N:6.7,O:7.5,P:1.9,Q:0.095,R:6.0,S:6.3,T:9.1,U:2.8,V:0.98,W:2.4,X:0.15,Y:2.0,Z:0.074};
+  const text=document.getElementById("interText").textContent.toUpperCase();
+  const counts={};let total=0;ALPHA.split("").forEach(c=>counts[c]=0);
+  for(const ch of text){if(ch>="A"&&ch<="Z"){counts[ch]++;total++;}}
+  const freq=document.getElementById("freq");
+  const max=Math.max(...Object.values(counts).map(v=>v/total*100),...Object.values(ENG));
+  ALPHA.split("").forEach(c=>{
+    const pct=counts[c]/total*100;
+    const col=document.createElement("div");col.className="col";
+    col.innerHTML=`<div class="barwrap"><div class="bar" style="height:0%"></div><div class="bar eng" style="height:${ENG[c]/max*100}%"></div></div><div class="glyph">${c}</div>`;
+    freq.appendChild(col);
+    requestAnimationFrame(()=>{col.querySelector(".bar").style.height=(pct/max*100)+"%";});
+  });
+  let comparing=false;
+  document.getElementById("freqCompare").onclick=function(){comparing=!comparing;freq.classList.toggle("compare",comparing);this.textContent=comparing?"Hide English":"Compare to English";document.getElementById("freqHint").textContent=comparing?"amber = English; the dark peaks line up with E, T, A, O":"the tallest ciphertext bars are your E, T, A, O…";};
+})();
+
+/* ================= 6 · Vigenère ================= */
+(function(){
+  const vig=document.getElementById("vig"),inEl=document.getElementById("vigIn"),keyEl=document.getElementById("vigKey"),look=document.getElementById("vigLook");
+  function render(){
+    const pt=inEl.value.toUpperCase().replace(/[^A-Z]/g,"");const key=keyEl.value.toUpperCase().replace(/[^A-Z]/g,"")||"A";
+    vig.innerHTML="";const occ={};
+    pt.split("").forEach((c,i)=>{
+      const k=key[i%key.length];const sh=A(k);const ci=L(A(c)+sh);occ[c]=occ[c]||[];occ[c].push(ci);
+      const d=document.createElement("div");d.className="vcol";
+      d.innerHTML=`<span class="p">${c}</span><span class="ar">↓</span><span class="key">${k}</span><span class="sh">+${sh}</span><span class="ar">↓</span><span class="c">${ci}</span>`;
+      vig.appendChild(d);
+    });
+    const rep=Object.entries(occ).find(([c,a])=>a.length>1&&new Set(a).size>1);
+    look.textContent=rep?`Look: ${rep[0]} appears ${rep[1].length} times and encrypts to ${[...new Set(rep[1])].join(", ")} — all different. Frequency analysis is blind here.`:"";
+  }
+  inEl.addEventListener("input",render);keyEl.addEventListener("input",render);render();
+})();
+
+/* ---------- shared rotor ladder renderer ---------- */
+function renderLadder(host,r,name,litIn){
+  host.innerHTML="";
+  const title=document.createElement("div");title.className="rname";title.textContent=name;host.appendChild(title);
+  const lad=document.createElement("div");lad.className="ladder";
+  const left=document.createElement("div");left.className="side";
+  const mid=document.createElement("div");mid.style.position="relative";
+  const right=document.createElement("div");right.className="side";
+  const NS="http://www.w3.org/2000/svg";
+  const svg=document.createElementNS(NS,"svg");svg.setAttribute("viewBox","0 0 70 520");svg.setAttribute("preserveAspectRatio","none");
+  for(let i=0;i<26;i++){
+    const pin=document.createElement("div");pin.className="pin";pin.textContent=L(i+r.pos);
+    left.appendChild(pin);
+    const o=fwd(r,i);
+    const ro=document.createElement("div");ro.className="pin";ro.textContent=L(o+r.pos);right.appendChild(ro);
+    const path=document.createElementNS(NS,"path");
+    const y1=i*20+10,y2=o*20+10;
+    path.setAttribute("d",`M0 ${y1} C 35 ${y1}, 35 ${y2}, 70 ${y2}`);
+    path.setAttribute("class","wirepath");path.dataset.in=i;svg.appendChild(path);
+  }
+  mid.appendChild(svg);
+  lad.appendChild(left);lad.appendChild(mid);lad.appendChild(right);
+  host.appendChild(lad);
+  if(litIn!=null)lightLadder(host,r,litIn);
+}
+function lightLadder(host,r,inIdx){
+  const lefts=host.querySelectorAll(".side")[0].children,rights=host.querySelectorAll(".side")[1].children;
+  [...lefts].forEach(p=>p.classList.remove("lit"));[...rights].forEach(p=>p.classList.remove("lit"));
+  host.querySelectorAll(".wirepath").forEach(p=>p.classList.remove("lit"));
+  if(inIdx==null)return;
+  const o=fwd(r,inIdx);
+  lefts[inIdx].classList.add("lit");rights[o].classList.add("lit");
+  const path=host.querySelector(`.wirepath[data-in="${inIdx}"]`);if(path)path.classList.add("lit");
+  return o;
+}
+
+/* ================= 7 · One rotor ================= */
+(function(){
+  const host=document.getElementById("rotor1"),tape=document.getElementById("tape1");
+  let r=rotor("I",0);let out="";
+  function draw(lit){renderLadder(host,r,"Rotor I · pos "+L(r.pos),lit);}
+  function press(ch){r.pos=mod(r.pos+1,26);const inIdx=A(ch);const o=fwd(r,inIdx);out+=L(o);
+    tape.innerHTML=out.slice(0,-1)+'<span class="new">'+out.slice(-1)+'</span>';draw(inIdx);}
+  draw(null);
+  document.getElementById("demo1").onclick=()=>{r=rotor("I",0);out="";let n=0;const iv=setInterval(()=>{press("A");if(++n>=6)clearInterval(iv);},260);};
+  document.getElementById("reset1").onclick=()=>{r=rotor("I",0);out="";tape.textContent="press a key, or run the demo";draw(null);};
+  window.addEventListener("keydown",e=>{if(document.activeElement.tagName==="INPUT")return;const k=e.key.toUpperCase();if(k>="A"&&k<="Z"&&isInView(host)){press(k);}});
+  window._rotor1press=press;
+})();
+
+/* ================= 8 · Many rotors ================= */
+(function(){
+  const host=document.getElementById("rotors3"),tape=document.getElementById("tape3");
+  // display order fast->slow (III, II, I) to read left->right like the page; engine order is [left,mid,right]=[I,II,III]
+  let rs;function init(){rs=[rotor("I",0),rotor("II",0),rotor("III",0)];}// [left=slow I, mid=II, right=fast III]
+  let out="";
+  function draw(){
+    host.innerHTML="";
+    const order=[{r:rs[2],n:"Rotor III · fast"},{r:rs[1],n:"Rotor II"},{r:rs[0],n:"Rotor I · slow"}];
+    order.forEach((o,i)=>{const d=document.createElement("div");d.className="rotor";host.appendChild(d);renderLadder(d,o.r,o.n+" · "+L(o.r.pos),null);});
+  }
+  function press(ch){stepRotors(rs);const c=A(ch);
+    // forward only (illustrative, no reflector here) through right->mid->left
+    let x=fwd(rs[2],c);x=fwd(rs[1],x);x=fwd(rs[0],x);
+    out+=L(x);tape.innerHTML=out.slice(0,-1)+'<span class="new">'+out.slice(-1)+'</span>';draw();}
+  init();draw();tape.textContent="press a key, or run the demo";
+  document.getElementById("demo3").onclick=()=>{init();out="";let n=0;const iv=setInterval(()=>{press("A");if(++n>=30)clearInterval(iv);},120);};
+  document.getElementById("reset3").onclick=()=>{init();out="";tape.textContent="press a key, or run the demo";draw();};
+  window.addEventListener("keydown",e=>{if(document.activeElement.tagName==="INPUT")return;const k=e.key.toUpperCase();if(k>="A"&&k<="Z"&&isInView(host)){press(k);}});
+})();
+
+/* ================= 9 · Reflector signal path ================= */
+(function(){
+  const host=document.getElementById("signal");
+  const rs=[rotor("I",0),rotor("II",0),rotor("III",0)];const refl="B";
+  const cols=[{id:"in",hd:"Input",io:true},{id:"r3",hd:"Rotor III"},{id:"r2",hd:"Rotor II"},{id:"r1",hd:"Rotor I"},{id:"rf",hd:"Reflector B"},{id:"out",hd:"Output",io:true}];
+  function build(){
+    host.innerHTML="";
+    cols.forEach(c=>{const d=document.createElement("div");d.className="scol"+(c.io?" io":"");d.id="sc-"+c.id;
+      const h=document.createElement("div");h.className="hd";h.textContent=c.hd;d.appendChild(h);
+      for(let i=0;i<26;i++){const p=document.createElement("div");p.className="pin";p.textContent=ALPHA[i];p.dataset.i=i;if(c.io&&c.id==="in")p.onclick=()=>trace(i);d.appendChild(p);}
+      host.appendChild(d);});
+    const NS="http://www.w3.org/2000/svg";const svg=document.createElementNS(NS,"svg");svg.setAttribute("class","tracer");svg.id="tracer";host.appendChild(svg);
+    trace(A("A"));
+  }
+  function pinCenter(colId,i){const col=document.getElementById("sc-"+colId);const pin=col.children[i+1];const cr=pin.getBoundingClientRect(),hr=host.getBoundingClientRect();return{x:cr.left+cr.width/2-hr.left,y:cr.top+cr.height/2-hr.top};}
+  function trace(start){
+    host.querySelectorAll(".pin").forEach(p=>p.classList.remove("lit","io-lit"));
+    // forward path (no stepping; static positions)
+    const c0=start;
+    const a=fwd(rs[2],c0);const b=fwd(rs[1],a);const c=fwd(rs[0],b);
+    const rf=A(REFLECTORS[refl][c]);
+    const d=bwd(rs[0],rf);const e=bwd(rs[1],d);const f=bwd(rs[2],e);
+    const seq=[["in",c0],["r3",a],["r2",b],["r1",c],["rf",rf],["r1",d],["r2",e],["r3",f],["out",f]];
+    // light pins
+    document.querySelector("#sc-in").children[c0+1].classList.add("io-lit");
+    document.querySelector("#sc-out").children[f+1].classList.add("io-lit");
+    [["r3",a],["r2",b],["r1",c],["rf",rf],["r1",d],["r2",e],["r3",f]].forEach(([col,i])=>{document.getElementById("sc-"+col).children[i+1].classList.add("lit");});
+    // draw line
+    const svg=document.getElementById("tracer");svg.innerHTML="";
+    const NS="http://www.w3.org/2000/svg";
+    const pts=[pinCenter("in",c0),pinCenter("r3",a),pinCenter("r2",b),pinCenter("r1",c),pinCenter("rf",rf),pinCenter("r1",d),pinCenter("r2",e),pinCenter("r3",f),pinCenter("out",f)];
+    let dstr="M"+pts[0].x+" "+pts[0].y;for(let i=1;i<pts.length;i++){const pm=(pts[i-1].x+pts[i].x)/2;dstr+=` C ${pm} ${pts[i-1].y}, ${pm} ${pts[i].y}, ${pts[i].x} ${pts[i].y}`;}
+    const path=document.createElementNS(NS,"path");path.setAttribute("d",dstr);path.setAttribute("fill","none");path.setAttribute("stroke","var(--amber)");path.setAttribute("stroke-width","1.6");path.setAttribute("opacity",".85");svg.appendChild(path);
+  }
+  build();window.addEventListener("resize",()=>{const lit=document.querySelector("#sc-in .io-lit");if(lit)trace(+lit.dataset.i);});
+  // encrypt/decrypt demo
+  const inEl=document.getElementById("reflIn"),outEl=document.getElementById("reflOut"),backEl=document.getElementById("reflBack");
+  function demo(){const e1=encodeText(["I","II","III"],[0,0,0],null,"B",{},inEl.value);outEl.textContent=group5(e1.out)||" ";
+    const e2=encodeText(["I","II","III"],[0,0,0],null,"B",{},e1.out);backEl.textContent=group5(e2.out)||" ";}
+  inEl.addEventListener("input",demo);demo();
+})();
+
+/* ---------- shared plugboard widget ---------- */
+const CAB_COLORS=["#1e3a5f","#b67c3a","#5a7d5a","#8a5a7d","#3a6b7d","#a35a45","#5a5a8a","#7d6b3a","#4a8a7d","#9a4a6a"];
+function makePlugboard(gridEl,svgEl,countEl,onChange){
+  const plug={};let armed=null;
+  const layout="ABCDEFGHIJKLM NOPQRSTUVWXYZ".split(" ");
+  gridEl.innerHTML="";
+  ALPHA.split("").forEach(c=>{
+    const j=document.createElement("div");j.className="jack";j.dataset.l=c;
+    j.innerHTML=`<span class="jl">${c}</span><span class="hole"></span>`;
+    j.onclick=()=>click(c);gridEl.appendChild(j);
+  });
+  function pairs(){const seen=new Set(),out=[];for(const a in plug){const b=plug[a];const k=[a,b].sort().join("");if(!seen.has(k)){seen.add(k);out.push([a,b]);}}return out;}
+  function colorFor(){const m={};pairs().sort((p,q)=>p[0].localeCompare(q[0])).forEach((p,i)=>m[[...p].sort().join("")]=CAB_COLORS[i%CAB_COLORS.length]);return m;}
+  function click(c){
+    if(plug[c]){const b=plug[c];delete plug[c];delete plug[b];if(armed===c)armed=null;render();onChange&&onChange(plug);return;}
+    if(armed===null){armed=c;render();return;}
+    if(armed===c){armed=null;render();return;}
+    if(pairs().length>=10){armed=null;render();return;}
+    plug[armed]=c;plug[c]=armed;armed=null;render();onChange&&onChange(plug);
+  }
+  function render(){
+    const cm=colorFor();
+    gridEl.querySelectorAll(".jack").forEach(j=>{const l=j.dataset.l;j.classList.toggle("armed",armed===l);
+      const wired=!!plug[l];j.classList.toggle("wired",wired);
+      if(wired)j.style.setProperty("--cab",cm[[l,plug[l]].sort().join("")]);else j.style.removeProperty("--cab");});
+    if(countEl)countEl.textContent=pairs().length+" of 10 cables";
+    drawCables(cm);
+  }
+  function drawCables(cm){
+    const wrap=svgEl.parentElement,wr=wrap.getBoundingClientRect();
+    svgEl.setAttribute("viewBox",`0 0 ${wr.width} ${wr.height}`);
+    let s="";
+    pairs().forEach(([a,b])=>{
+      const ja=gridEl.querySelector(`.jack[data-l="${a}"] .hole`),jb=gridEl.querySelector(`.jack[data-l="${b}"] .hole`);
+      if(!ja||!jb)return;const ra=ja.getBoundingClientRect(),rb=jb.getBoundingClientRect();
+      const x1=ra.left+ra.width/2-wr.left,y1=ra.top+ra.height/2-wr.top,x2=rb.left+rb.width/2-wr.left,y2=rb.top+rb.height/2-wr.top;
+      const sag=Math.max(26,Math.abs(x2-x1)*.2)+Math.abs(y2-y1)*.12,my=Math.max(y1,y2)+sag;
+      const col=cm[[a,b].sort().join("")];
+      s+=`<path d="M${x1} ${y1} Q ${(x1+x2)/2} ${my} ${x2} ${y2}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><circle cx="${x1}" cy="${y1}" r="3" fill="${col}"/><circle cx="${x2}" cy="${y2}" r="3" fill="${col}"/>`;
+    });
+    svgEl.innerHTML=s;
+  }
+  function set(pairsArr){for(const k in plug)delete plug[k];pairsArr.forEach(([a,b])=>{plug[a]=b;plug[b]=a;});armed=null;render();onChange&&onChange(plug);}
+  function clear(){for(const k in plug)delete plug[k];armed=null;render();onChange&&onChange(plug);}
+  render();
+  window.addEventListener("resize",()=>drawCables(colorFor()));
+  return{plug,render,set,clear};
+}
+
+/* ================= 10 · Plugboard demo ================= */
+(function(){
+  const inEl=document.getElementById("plugIn"),withEl=document.getElementById("plugOutWith"),noneEl=document.getElementById("plugOutNone");
+  const pb=makePlugboard(document.getElementById("plugGrid"),document.getElementById("plugSvg"),document.getElementById("plugCount"),render);
+  pb.set([["A","M"],["F","R"],["G","K"],["L","P"],["T","Z"],["B","Q"]]);
+  function render(plug){
+    const p=plug||pb.plug;
+    withEl.textContent=group5(encodeText(["I","II","III"],[0,0,0],null,"B",p,inEl.value).out)||" ";
+    noneEl.textContent=group5(encodeText(["I","II","III"],[0,0,0],null,"B",{},inEl.value).out)||" ";
+  }
+  inEl.addEventListener("input",()=>render());
+  document.getElementById("plugClear").onclick=()=>pb.clear();
+})();
+
+/* ================= 11 · Key count ================= */
+(function(){
+  const sec=document.getElementById("keycount");let done=false;
+  function fmt(n){return n.toLocaleString("en-US");}
+  function run(){
+    if(done)return;done=true;
+    sec.querySelectorAll(".num[data-target]").forEach(el=>{
+      const target=Number(el.dataset.target);const dur=1100;const t0=performance.now();
+      function tick(t){const k=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-k,3);
+        el.textContent=fmt(Math.floor(target*e));if(k<1)requestAnimationFrame(tick);else el.textContent=fmt(target);}
+      requestAnimationFrame(tick);
+    });
+    const total=document.getElementById("grandTotal");const big=60*17576*150738274937250;// 158,962,555,217,826,360,000
+    const t0=performance.now(),dur=1500;
+    function tick(t){const k=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-k,3);
+      total.textContent=fmt(Math.floor(big*e));if(k<1)requestAnimationFrame(tick);else total.textContent="158,962,555,217,826,360,000";}
+    requestAnimationFrame(tick);
+  }
+  new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting)run();});},{threshold:.4}).observe(sec);
+})();
+
+/* ================= 12 · The machine ================= */
+const machine=(function(){
+  const KB=["QWERTZUIO","ASDFGHJK","PYXCVBNML"];
+  const state={types:["I","II","III"],starts:[0,0,0],rings:[0,0,0],plug:{}};
+  let pb;
+  const typedEl=document.getElementById("mTyped"),outEl=document.getElementById("mOut");
+  // rotor selectors + thumbwheels
+  function buildRotors(){
+    const host=document.getElementById("mRotors");host.innerHTML="";
+    ["LEFT","MIDDLE","RIGHT"].forEach((nm,i)=>{
+      const d=document.createElement("div");d.className="m-rotor";
+      const sel=document.createElement("select");["I","II","III","IV","V"].forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=t;if(t===state.types[i])o.selected=true;sel.appendChild(o);});
+      sel.onchange=()=>{state.types[i]=sel.value;recompute();};
+      const th=document.createElement("div");th.className="thumb";
+      th.innerHTML=`<button class="arw" data-up>▲</button><div class="win" data-win></div><div class="st" data-st></div><button class="arw" data-dn>▼</button>`;
+      th.querySelector("[data-up]").onclick=()=>{state.starts[i]=mod(state.starts[i]+1,26);recompute();};
+      th.querySelector("[data-dn]").onclick=()=>{state.starts[i]=mod(state.starts[i]-1,26);recompute();};
+      d.appendChild(sel);d.appendChild(th);host.appendChild(d);
+    });
+  }
+  function buildAdvanced(){
+    const a=document.getElementById("advanced");a.innerHTML="";
+    ["LEFT","MIDDLE","RIGHT"].forEach((nm,i)=>{
+      const r=document.createElement("div");r.className="ring";
+      r.innerHTML=`<span>${nm} ring</span><button data-d>−</button><span data-rv></span><button data-u>+</button>`;
+      r.querySelector("[data-d]").onclick=()=>{state.rings[i]=mod(state.rings[i]-1,26);recompute();};
+      r.querySelector("[data-u]").onclick=()=>{state.rings[i]=mod(state.rings[i]+1,26);recompute();};
+      a.appendChild(r);
+    });
+  }
+  function buildBoards(){
+    const lr=["lampRow1","lampRow2","lampRow3"].map(id=>document.getElementById(id));
+    const kr=["keyRow1","keyRow2","keyRow3"].map(id=>document.getElementById(id));
+    KB.forEach((row,ri)=>{lr[ri].innerHTML="";kr[ri].innerHTML="";
+      [...row].forEach(c=>{
+        const lamp=document.createElement("div");lamp.className="lamp";lamp.dataset.l=c;lamp.textContent=c;lr[ri].appendChild(lamp);
+        const key=document.createElement("div");key.className="mkey";key.dataset.l=c;key.textContent=c;key.onclick=()=>type(c);kr[ri].appendChild(key);
+      });
+    });
+  }
+  function recompute(){
+    // rotor windows + ring values
+    const host=document.getElementById("mRotors");
+    const res=encodeText(state.types,state.starts,state.rings,"B",state.plug,clean());
+    [...host.querySelectorAll(".m-rotor")].forEach((d,i)=>{
+      d.querySelector("[data-win]").textContent=L(res.positions[i]);
+      d.querySelector("[data-st]").textContent="start "+L(state.starts[i]);
+      const sel=d.querySelector("select");sel.value=state.types[i];
+    });
+    [...document.querySelectorAll("#advanced .ring")].forEach((r,i)=>{r.querySelector("[data-rv]").textContent=L(state.rings[i]);});
+    outEl.textContent=group5(res.out);
+    // lamp = last output letter
+    document.querySelectorAll(".lamp.on").forEach(l=>l.classList.remove("on"));
+    if(res.out){const last=res.out[res.out.length-1];const lp=document.querySelector(`.lamp[data-l="${last}"]`);if(lp)lp.classList.add("on");}
+  }
+  function clean(){return typedEl.textContent.toUpperCase().replace(/[^A-Z]/g,"");}
+  function type(c){typedEl.textContent+=c;flash(c);recompute();}
+  function flash(c){const k=document.querySelector(`.mkey[data-l="${c}"]`);if(k){k.classList.add("down");setTimeout(()=>k.classList.remove("down"),110);}}
+  document.getElementById("mSpace").onclick=()=>{typedEl.textContent+=" ";};
+  document.getElementById("mReset").onclick=()=>{state.starts=[0,0,0];typedEl.textContent="";recompute();};
+  document.getElementById("mAdvToggle").onclick=function(){document.getElementById("advanced").classList.toggle("show");this.textContent=document.getElementById("advanced").classList.contains("show")?"Hide advanced":"Show advanced (ring settings)";};
+  document.getElementById("mChallenge").onclick=()=>{
+    state.types=["II","I","III"];state.starts=[A("A"),A("B"),A("L")];state.rings=[0,0,0];
+    pb.set([["A","M"],["F","R"],["G","K"],["L","P"],["T","Z"]]);
+    buildRotors();
+    const ct=encodeText(state.types,state.starts,state.rings,"B",machine.plug(),"WETTERVORHERSAGEBISKAYA");
+    typedEl.textContent=ct.out;recompute();
+    outEl.scrollIntoView({block:"center"});
+  };
+  window.addEventListener("keydown",e=>{
+    if(document.activeElement.tagName==="INPUT"||document.activeElement.tagName==="SELECT")return;
+    if(!isInView(document.getElementById("sec-machine")))return;
+    if(e.key==="Backspace"){typedEl.textContent=typedEl.textContent.slice(0,-1);recompute();e.preventDefault();return;}
+    if(e.key===" "){typedEl.textContent+=" ";e.preventDefault();return;}
+    const k=e.key.toUpperCase();if(k>="A"&&k<="Z"){type(k);}
+  });
+  typedEl.setAttribute("contenteditable","false");
+  buildRotors();buildAdvanced();buildBoards();
+  pb=makePlugboard(document.getElementById("mPlugGrid"),document.getElementById("mPlugSvg"),document.getElementById("mPlugCount"),p=>{state.plug=p;recompute();});
+  typedEl.textContent="MUM DAD";
+  recompute();
+  return{plug:()=>state.plug};
+})();
+
+/* ================= 13 · Crib slider ================= */
+(function(){
+  const cipher="YDEKXYKSWNOQLAUNPXOVGFOWAHXXROEORVLXSZW";// 38
+  const crib="WETTERBERICHT";
+  let pos=0;const maxPos=cipher.length-crib.length;
+  const cipherEl=document.getElementById("cribCipher"),guessEl=document.getElementById("cribGuess"),verdict=document.getElementById("cribVerdict");
+  document.getElementById("cribLabel").textContent="Intercepted ciphertext · "+cipher.length+" letters";
+  function render(){
+    cipherEl.innerHTML="";guessEl.innerHTML="";
+    let clash=0;
+    for(let i=0;i<cipher.length;i++){
+      const inCrib=i>=pos&&i<pos+crib.length;const cl=inCrib&&crib[i-pos]===cipher[i];if(cl)clash++;
+      const ct=document.createElement("div");ct.className="ct"+(cl?" clash":"");
+      ct.innerHTML=`<div class="ch">${cipher[i]}</div><div class="cr">${inCrib?crib[i-pos]:""}</div>`;
+      cipherEl.appendChild(ct);
+    }
+    verdict.innerHTML=clash>0?`Position ${pos+1}/${maxPos+1} — <b class="bad">impossible</b> (${clash} letter${clash>1?"s":""} would encrypt to itself)`:`Position ${pos+1}/${maxPos+1} — <b class="ok">possible</b> (worth testing on the bombe)`;
+  }
+  document.getElementById("cribPrev").onclick=()=>{pos=mod(pos-1,maxPos+1);render();};
+  document.getElementById("cribNext").onclick=()=>{pos=mod(pos+1,maxPos+1);render();};
+  render();
+})();
+
+/* ================= progress rail + helpers ================= */
+function isInView(el){const r=el.getBoundingClientRect();return r.top<window.innerHeight*.7&&r.bottom>window.innerHeight*.3;}
+(function(){
+  const secs=[...document.querySelectorAll("section[data-rail]")];const rail=document.getElementById("rail");
+  secs.forEach((s,i)=>{const b=document.createElement("button");b.title=s.dataset.rail;b.onclick=()=>s.scrollIntoView({behavior:"smooth"});rail.appendChild(b);});
+  const btns=[...rail.children];
+  new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const i=secs.indexOf(e.target);btns.forEach((b,j)=>b.classList.toggle("on",j===i));}});},{threshold:.5,rootMargin:"-20% 0px -20% 0px"}).observe;
+  window.addEventListener("scroll",()=>{
+    let active=0;secs.forEach((s,i)=>{if(s.getBoundingClientRect().top<window.innerHeight*.5)active=i;});
+    btns.forEach((b,j)=>b.classList.toggle("on",j===active));
+  },{passive:true});
+})();
+</script>
+</body>
+</html>

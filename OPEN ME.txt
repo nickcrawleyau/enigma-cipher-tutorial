@@ -1,0 +1,17 @@
+ENIGMA — an interactive cipher tutorial
+=======================================
+
+TO OPEN IT:
+
+  Double-click  index.html
+
+It opens in your normal web browser. There is nothing to install.
+
+Then just scroll down the page and play with each section — turn the
+Caesar wheel, type on the keyboard, watch the lamps light up. By the
+end you'll be typing on a full working Enigma machine.
+
+Tip: connect to the internet the first time you open it, so the page
+loads its proper fonts and looks its best. It still works offline.
+
+Enjoy!
