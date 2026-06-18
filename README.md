@@ -6,6 +6,8 @@ reflector → plugboard → the key-space → a full working Enigma → and how 
 
 It's a single HTML file. **Nothing to install.**
 
+**▶ Live demo: https://nickcrawleyau.github.io/enigma-cipher-tutorial/**
+
 ## How to open it (the easy way)
 
 1. Download/unzip the files.
